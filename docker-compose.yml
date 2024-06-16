@@ -1,0 +1,111 @@
+version: '3'
+services:
+
+  ########################### FTP Services:
+  #  Doc: https://hub.docker.com/r/delfer/alpine-ftp-server
+  ftp-server:
+    container_name: ftp-server
+    image: delfer/alpine-ftp-server
+    environment:
+      - USERS=source|source target|target
+    volumes:
+      - ./ftp_source:/ftp/source
+      - ./ftp_target:/ftp/target
+    ports:
+      - '21:21'
+      - '21000-21010:21000-21010'
+
+  ########################### Airflow Services:
+  # Doc: https://hub.docker.com/r/bitnami/redis
+  redis:
+    container_name: redis
+    image: bitnami/redis:7.2.4
+    environment:
+      - REDIS_PASSWORD=airflow
+
+  # Doc: https://hub.docker.com/r/bitnami/postgresql
+  postgres:
+    container_name: postgres
+    image: bitnami/postgresql:16.2.0
+    environment:
+      - POSTGRESQL_DATABASE=airflow
+      - POSTGRESQL_USERNAME=airflow
+      - POSTGRESQL_PASSWORD=airflow
+
+  # Doc env: https://airflow.apache.org/docs/apache-airflow/stable/configurations-ref.html
+  #           https://hub.docker.com/r/bitnami/airflow
+  #           https://hub.docker.com/r/bitnami/airflow-scheduler
+  #           https://hub.docker.com/r/bitnami/airflow-worker
+  airflow-webserver:
+    container_name: airflow-webserver
+    image: bitnami/airflow:2.9.0
+    volumes:
+      - ./dags:/opt/bitnami/airflow/dags
+      - ./requirements.txt:/bitnami/python/requirements.txt
+    environment:
+      - AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=10
+      - AIRFLOW_SECRET_KEY=gu9sfREcbpyjhliIApYV57_iSmcJ2-2hwbpc36He10U=
+      - AIRFLOW_DATABASE_HOST=postgres
+      - AIRFLOW_DATABASE_NAME=airflow
+      - AIRFLOW_DATABASE_USERNAME=airflow
+      - AIRFLOW_DATABASE_PASSWORD=airflow
+      - AIRFLOW_EXECUTOR=CeleryExecutor
+      - AIRFLOW_USERNAME=admin
+      - AIRFLOW_PASSWORD=admin
+      - AIRFLOW_LOAD_EXAMPLES=no
+    ports:
+      - '8080:8080'
+
+  airflow-scheduler:
+    container_name: airflow-scheduler
+    image: bitnami/airflow-scheduler:2.9.0
+    volumes:
+      - ./dags:/opt/bitnami/airflow/dags
+      - ./requirements.txt:/bitnami/python/requirements.txt
+    environment:
+      - AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=10
+      - AIRFLOW_SECRET_KEY=gu9sfREcbpyjhliIApYV57_iSmcJ2-2hwbpc36He10U=
+      - AIRFLOW_DATABASE_HOST=postgres
+      - AIRFLOW_DATABASE_NAME=airflow
+      - AIRFLOW_DATABASE_USERNAME=airflow
+      - AIRFLOW_DATABASE_PASSWORD=airflow
+      - AIRFLOW_EXECUTOR=CeleryExecutor
+      - AIRFLOW_WEBSERVER_HOST=airflow-webserver
+      - AIRFLOW_LOAD_EXAMPLES=no
+      - REDIS_PASSWORD=airflow
+
+  airflow-worker1:
+    container_name: airflow-worker1
+    image: bitnami/airflow-worker:2.9.0
+    volumes:
+      - ./dags:/opt/bitnami/airflow/dags
+      - ./requirements.txt:/bitnami/python/requirements.txt
+      - ./history.log:/opt/history.log
+    environment:
+      - AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=10
+      - AIRFLOW_SECRET_KEY=gu9sfREcbpyjhliIApYV57_iSmcJ2-2hwbpc36He10U=
+      - AIRFLOW_DATABASE_HOST=postgres
+      - AIRFLOW_DATABASE_NAME=airflow
+      - AIRFLOW_DATABASE_USERNAME=airflow
+      - AIRFLOW_DATABASE_PASSWORD=airflow
+      - AIRFLOW_EXECUTOR=CeleryExecutor
+      - AIRFLOW_WEBSERVER_HOST=airflow-webserver
+      - REDIS_PASSWORD=airflow
+  
+  airflow-worker2:
+    container_name: airflow-worker2
+    image: bitnami/airflow-worker:2.9.0
+    volumes:
+      - ./dags:/opt/bitnami/airflow/dags
+      - ./requirements.txt:/bitnami/python/requirements.txt
+      - ./history.log:/opt/history.log
+    environment:
+      - AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=10
+      - AIRFLOW_SECRET_KEY=gu9sfREcbpyjhliIApYV57_iSmcJ2-2hwbpc36He10U=
+      - AIRFLOW_DATABASE_HOST=postgres
+      - AIRFLOW_DATABASE_NAME=airflow
+      - AIRFLOW_DATABASE_USERNAME=airflow
+      - AIRFLOW_DATABASE_PASSWORD=airflow
+      - AIRFLOW_EXECUTOR=CeleryExecutor
+      - AIRFLOW_WEBSERVER_HOST=airflow-webserver
+      - REDIS_PASSWORD=airflow
